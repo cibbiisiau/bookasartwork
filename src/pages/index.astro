@@ -1,4 +1,41 @@
 ---
+import Airtable from 'airtable';
+// 1. IMPORTA IL TUO FILE DI DATI LOCALE
+import mappaImmagini from '../pages/mappa-immagini.json';
+
+// Configura Airtable
+const base = new Airtable({
+  apiKey: import.meta.env.PUBLIC_AIRTABLE_API_KEY
+}).base(import.meta.env.PUBLIC_AIRTABLE_BASE_ID);
+
+// Recupera i dati
+let items = [];
+try {
+  const records = await base(import.meta.env.PUBLIC_AIRTABLE_TABLE_NAME)
+    .select({ maxRecords: 100 })
+    .all();
+ 
+  items = records.map(record => {
+    const titoloLibro = record.fields.Titolo;
+    
+    return {
+      id: record.id,
+      titolo: titoloLibro,
+      autore: record.fields.Autore,
+      anno: record.fields.Anno,
+      editore: record.fields.Editore,
+      luogo: record.fields["Luogo di pubblicazione"],
+      formato: record.fields.Formato,
+      tiratura: record.fields.Tiratura,
+      pagine: record.fields.Pagine,
+      // 2. CERCA IL NOME DELL'IMMAGINE USANDO IL TITOLO COME CHIAVE
+      imageName: mappaImmagini[titoloLibro] || null, // Se non trova il titolo, imposta null
+    };
+  });
+} catch (error) {
+  console.error('Errore caricamento dati:', error);
+}
+
 
 ---
 
@@ -8,9 +45,378 @@
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
+		<title>bookasartwork</title>
 	</head>
 	<body>
-		<h1>Astro</h1>
+		
+		<img id="image-preview" src="" alt="Anteprima libro">
+
+		
+		
+		<div class="grid">
+			{/* <div class="header">Immagine</div>  */}
+			<div class="header">Titolo</div>
+			<div class="header">Autore</div>
+			<div class="header">Anno</div>
+			<div class="header">Editore</div>
+			<div class="header">Luogo</div>
+			<div class="header">Formato</div>
+			<div class="header">Tiratura</div>
+			<div class="header">Pagine</div>
+	
+			{items.map(item => (
+				<div class="card" data-image={item.imageName}>
+					{/* La cella dell'immagine */}
+					 
+					{/* Le altre celle */}
+					<h3>{item.titolo}</h3>
+					<p>{item.autore}</p>
+					<p>{item.anno}</p>
+					<p>{item.editore}</p>
+					<p>{item.luogo}</p>
+					<p>{item.formato}</p>
+					<p>{item.tiratura}</p>
+					<p>{item.pagine}</p>
+					{/* Ho rimosso <p>{item.image}</p> perché l'URL non serve visualizzarlo */}
+					{/* Ho rimosso {item.category} perché non è nel tuo script di fetch */}
+				</div>
+			))}
+		</div>
+		<!-- Form contributo -->
+<details class="contribute-section">
+	<summary>Vuoi contribuire all'archivio?</summary>
+   
+	<form id="contribute-form" class="contribute-form">
+	  <div class="form-group">
+		<label for="titolo">Titolo</label>
+		<input type="text" id="titolo" name="titolo" required>
+	  </div>
+	 
+	  <div class="form-group">
+		<label for="autore">Autore</label>
+		<textarea id="autore" name="autore" rows="1" required></textarea>
+	  </div>
+	 
+	  <div class="form-group">
+		<label for="anno">Anno</label>
+		<select id="anno" name="anno" required>
+		  <option value="">Seleziona...</option>
+		  <option value="Neri">1960</option>
+		  <option value="Siamesi">1961</option>
+		  <option value="Europei">1962</option>
+		  <option value="Altro">1963</option>
+		  <option value="Neri">1964</option>
+		  <option value="Siamesi">1965</option>
+		  <option value="Europei">1966</option>
+		  <option value="Altro">1967</option>
+		  <option value="Neri">1968</option>
+		  <option value="Siamesi">1969</option>
+		  <option value="Europei">1970</option>
+		  <option value="Altro">1971</option>
+		</select>
+	  </div>
+
+	  <div class="form-group">
+		<label for="editore">Editore</label>
+		<textarea id="editore" name="editore" rows="1" required></textarea>
+	  </div>
+
+	  <div class="form-group">
+		<label for="luogo">Luogo</label>
+		<textarea id="luogo" name="luogo" rows="1" required></textarea>
+	  </div>
+
+	  <div class="form-group">
+		<label for="formato">Formato</label>
+		<textarea id="formato" name="formato" rows="1" required></textarea>
+	  </div>
+
+	  <div class="form-group">
+		<label for="tiratura">Tiratura</label>
+		<textarea id="tiratura" name="tiratura" rows="1" required></textarea>
+	  </div>
+
+	  <div class="form-group">
+		<label for="pagine">Pagine</label>
+		<textarea id="pagine" name="pagine" rows="1" required></textarea>
+	  </div>
+	 
+	  <div class="form-group">
+		<label for="image-url">URL Immagine</label>
+	<input
+	  type="url"
+	  id="image-url"
+	  name="imageUrl"
+	  placeholder="https://esempio.com/immagine.jpg&quot;
+	>
+	<small>Inserisci il link di un'immagine già online (es: da Unsplash, Imgur, etc.)</small>
+	  </div>
+	 
+	  <button type="submit" class="submit-btn">Invia contributo</button>
+	  <div id="form-message" class="form-message"></div>
+	</form>
+  </details>
+  <script>
+    // LOGICA PER L'EFFETTO HOVER SULL'IMMAGINE (una sola volta)
+    const imagePreview = document.getElementById('image-preview');
+    const tableRows = document.querySelectorAll('.card');
+
+    tableRows.forEach(row => {
+      // Mostra l'immagine quando il mouse entra
+      row.addEventListener('mouseenter', () => {
+        const imageName = row.dataset.image;
+        if (imageName && imageName !== 'null') {
+          imagePreview.src = `/images/${imageName}`;
+          imagePreview.style.opacity = '1';
+        }
+      });
+
+      // Nasconde l'immagine quando il mouse esce
+      row.addEventListener('mouseleave', () => {
+        imagePreview.style.opacity = '0';
+      });
+    });
+
+    // LOGICA PER IL FORM DI CONTRIBUTO
+    document.getElementById('contribute-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const submitBtn = e.target.querySelector('.submit-btn');
+      const messageDiv = document.getElementById('form-message');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Invio in corso...';
+      messageDiv.textContent = ''; // Pulisci messaggio precedente
+
+      // Raccogli i dati dal form
+      const imageUrl = document.getElementById('image-url').value.trim();
+
+      // === QUI LA CORREZIONE PRINCIPALE ===
+      const formData = {
+        "Titolo": document.getElementById('titolo').value,
+        "Autore": document.getElementById('autore').value,
+        "Anno": parseInt(document.getElementById('anno').value, 10),
+        "Editore": document.getElementById('editore').value,
+        "Luogo di pubblicazione": document.getElementById('luogo').value,
+        "Formato": document.getElementById('formato').value,
+        "Tiratura": document.getElementById('tiratura').value,
+        "Pagine": document.getElementById('pagine').value
+      };
+
+      // Aggiungi l'URL dell'immagine solo se fornito
+      if (imageUrl) {
+        formData.Image = [{ url: imageUrl }];
+      }
+
+      try {
+        const response = await fetch(`https://api.airtable.com/v0/${import.meta.env.PUBLIC_AIRTABLE_BASE_ID}/${import.meta.env.PUBLIC_AIRTABLE_TABLE_NAME}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.PUBLIC_AIRTABLE_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            fields: formData
+          })
+        });
+
+        const responseData = await response.json();
+
+        if (response.ok) {
+          messageDiv.textContent = '✅ Contributo inviato con successo! Ricarica la pagina per vederlo.';
+          messageDiv.style.color = 'green';
+          e.target.reset(); // Svuota il form
+        } else {
+          messageDiv.textContent = `❌ Errore: ${responseData.error?.message || 'Errore sconosciuto'}`;
+          messageDiv.style.color = 'red';
+        }
+      } catch (error) {
+        messageDiv.textContent = '❌ Errore di rete durante l\'invio. Riprova.';
+        messageDiv.style.color = 'red';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Invia contributo';
+      }
+    });
+</script>
 	</body>
 </html>
+
+<style>
+	/* Stili globali applicati al body */
+body {
+  /* Sfondo grigio chiaro, come richiesto */
+  background-color: white;
+  
+  /* Imposta il font principale su Helvetica, con alternative sicure */
+  /* Se Helvetica non è installato, il browser userà Arial, e poi un qualsiasi font sans-serif */
+  font-family: Helvetica, Arial, sans-serif;
+  
+  /* Imposta il colore di base del testo per l'intera pagina */
+  color: #333; /* Usiamo un grigio scuro per la leggibilità generale, il rosso lo applichiamo dopo */
+}
+
+/* Stili per i titoli principali della pagina */
+h1 {
+  /* Colore rosso per i titoli, come richiesto */
+  color: black; /* Un rosso non troppo acceso, più leggibile */
+  text-align: center; /* Centra il titolo */
+}
+
+/* --- LA GRIGLIA / TABELLA --- */
+
+/* Contenitore principale della nostra "tabella" */
+.grid {
+  /* Definiamo che questo elemento userà CSS Grid */
+  display: grid;
+  
+  /* Definiamo le colonne della tabella. */
+  /* Ogni valore definisce la larghezza di una colonna. */
+  /* In questo caso abbiamo 9 colonne: Immagine, Titolo, Autore, ecc. */
+  /* '1fr' è un'unità flessibile che dice "usa una frazione dello spazio disponibile" */
+  grid-template-columns: 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  
+  /* Spazio tra le righe e le colonne */
+  gap: 2px;
+  
+  /* Colore di sfondo della griglia, che si vedrà nel 'gap' e sembrerà una linea di separazione */
+  background-color: white;
+  
+  /* Bordo esterno rosso per la tabella */
+  // border: 2px solid black;
+
+  /* Margine per distanziare la tabella dal resto */
+ // margin: 2rem;
+}
+
+/* Stile per la singola card, che ora si comporta come una riga della tabella (<tr>) */
+.card {
+  /* Questa è una proprietà chiave: fa in modo che gli elementi figli (.card > *) */
+  /* vengano trattati come elementi diretti della griglia (.grid) */
+  /* In pratica, la card diventa un contenitore "invisibile" per la riga */
+  display: contents; 
+}
+
+/* Stile per tutti gli elementi diretti della card (h3, p, img) */
+/* Questi si comporteranno come le celle di una tabella (<td>) */
+.card > * {
+  padding: 12px; /* Spaziatura interna per ogni cella */
+  background-color: #ffffff; /* Sfondo bianco per le celle per far risaltare il testo */
+  color: black; /* Colore del testo rosso, come richiesto */
+  
+  /* Allinea il testo verticalmente al centro della cella */
+  display: flex;
+  align-items: center;
+  
+  /* Evita che il testo vada a capo se non necessario (text overflow) */
+ /* white-space: nowrap;
+  overflow: scroll;
+  text-overflow: ellipsis; */
+  display: flex;
+  align-items: flex-start;
+}
+
+/* Stile specifico per l'immagine nella sua cella */
+.card img {
+  width: 100%; /* L'immagine occupa tutta la larghezza della sua colonna */
+  height: auto; /* L'altezza si adatta per mantenere le proporzioni */
+  object-fit: cover; /* Ritaglia l'immagine se necessario per riempire lo spazio */
+  padding: 0; /* Rimuoviamo il padding dalla cella dell'immagine */
+}
+
+/* Stile per le celle di intestazione */
+.header {
+  padding: 12px;
+  background-color: white; /* Sfondo rosso per le intestazioni */
+  color: black; /* Testo bianco */
+  font-weight: bold; /* Testo in grassetto */
+  text-align: left;
+}
+/* Stile per la finestra di anteprima dell'immagine */
+ #image-preview {
+  /* Stili che non cambiano */
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+  
+ /* box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); */
+  
+
+  /* --- LA MODIFICA FONDAMENTALE È QUI --- */
+  /* Imposta l'altezza fissa e lascia che la larghezza si adatti */
+  height: 250px;
+  width: auto;
+
+  /* Stili di supporto per un <img> */
+  object-fit: cover;
+  display: block;
+}
+
+/* --- STILI PER IL FORM E IL BOTTONE --- */
+
+/* Stile per la sezione a comparsa del form */
+.contribute-section {
+  max-width: 800px;
+  margin: 2rem auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.contribute-section summary {
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+/* Stile per il bottone di invio */
+.submit-btn {
+  /* Aspetto del pulsante */
+  display: block;
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  color: white;
+  background-color: red; /* Colore di sfondo rosso */
+  border: none; /* Rimuove il bordo di default */
+  border-radius: 8px; /* Angoli smussati */
+  
+  /* Feedback per l'utente */
+  cursor: pointer; /* Mostra la manina al passaggio del mouse */
+  transition: background-color 0.2s ease; /* Transizione fluida */
+}
+
+/* Stile per il bottone quando il mouse è sopra */
+.submit-btn:hover {
+  background-color: #c0392b; /* Un rosso leggermente più scuro */
+}
+
+/* Stile per il bottone quando è disabilitato (durante l'invio) */
+.submit-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Stile per i messaggi di successo o errore del form */
+.form-message {
+  margin-top: 1rem;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+}
+.form-message.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+.form-message.error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+  </style>
