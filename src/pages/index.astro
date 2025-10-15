@@ -54,22 +54,24 @@ try {
 		
 		
 		<div class="grid">
-			{/* <div class="header">Immagine</div>  */}
-			<div class="header">Titolo</div>
-			<div class="header">Autore</div>
-			<div class="header">Anno</div>
-			<div class="header">Editore</div>
-			<div class="header">Luogo</div>
-			<div class="header">Formato</div>
-			<div class="header">Tiratura</div>
-			<div class="header">Pagine</div>
+			<div class="header-row"> 
+				<div class="header">Titolo</div>
+				<div class="header">Autore</div>
+				<div class="header">Anno</div>
+				<div class="header">Editore</div>
+				<div class="header">Luogo</div>
+				<div class="header">Formato</div>
+				<div class="header">Tiratura</div>
+				<div class="header">Pagine</div>
+			</div>
+			
 	
 			{items.map(item => (
 				<div class="card" data-image={item.imageName}>
 					{/* La cella dell'immagine */}
 					 
 					{/* Le altre celle */}
-					<h3>{item.titolo}</h3>
+					<p>{item.titolo}</p>
 					<p>{item.autore}</p>
 					<p>{item.anno}</p>
 					<p>{item.editore}</p>
@@ -265,56 +267,65 @@ h1 {
 }
 
 /* --- LA GRIGLIA / TABELLA --- */
-
-/* Contenitore principale della nostra "tabella" */
 .grid {
-  /* Definiamo che questo elemento userà CSS Grid */
   display: grid;
-  
-  /* Definiamo le colonne della tabella. */
-  /* Ogni valore definisce la larghezza di una colonna. */
-  /* In questo caso abbiamo 9 colonne: Immagine, Titolo, Autore, ecc. */
-  /* '1fr' è un'unità flessibile che dice "usa una frazione dello spazio disponibile" */
   grid-template-columns: 1.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr;
-  
-  /* Spazio tra le righe e le colonne */
-  gap: 2px;
-  
-  /* Colore di sfondo della griglia, che si vedrà nel 'gap' e sembrerà una linea di separazione */
-  background-color: white;
-  
-  /* Bordo esterno rosso per la tabella */
-  // border: 2px solid black;
 
-  /* Margine per distanziare la tabella dal resto */
- // margin: 2rem;
+  /* Manteniamo solo lo spazio tra le colonne */
+  column-gap: 2px;
+
+  /* Rimuoviamo lo spazio tra le righe, gestito ora dal bordo */
+  row-gap: 0;
+
+  background-color: white;
 }
 
 /* Stile per la singola card, che ora si comporta come una riga della tabella (<tr>) */
-.card {
-  /* Questa è una proprietà chiave: fa in modo che gli elementi figli (.card > *) */
-  /* vengano trattati come elementi diretti della griglia (.grid) */
-  /* In pratica, la card diventa un contenitore "invisibile" per la riga */
-  display: contents; 
+	.card {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  border-bottom: 2px solid black;
+  /*transition: background-color 0.1s ease;*/
+ 
+}
+
+/* --- AGGIUNGI QUESTO BLOCCO PER L'EFFETTO HOVER --- */
+
+/* Stile per la riga .card quando il mouse è sopra */
+.card:hover {
+  background-color: black;
+  cursor: pointer; /* Aggiunge la manina per indicare che è interattiva */
+}
+
+/* Stile per le celle (i tag <p>) dentro la riga quando il mouse è sopra */
+.card:hover > * {
+  color: white;
+  
+  /* Questa riga è FONDAMENTALE: rende lo sfondo delle singole celle 
+     trasparente per far vedere il nero della riga genitore (.card) */
+  background-color: transparent; 
+
+}
+
+.header-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  border-bottom: 2px solid black;
+  background-color: black;
+ 
 }
 
 /* Stile per tutti gli elementi diretti della card (h3, p, img) */
 /* Questi si comporteranno come le celle di una tabella (<td>) */
-.card > * {
-  padding: 12px; /* Spaziatura interna per ogni cella */
-  background-color: #ffffff; /* Sfondo bianco per le celle per far risaltare il testo */
-  color: black; /* Colore del testo rosso, come richiesto */
-  
-  /* Allinea il testo verticalmente al centro della cella */
-  display: flex;
-  align-items: center;
-  
-  /* Evita che il testo vada a capo se non necessario (text overflow) */
- /* white-space: nowrap;
-  overflow: scroll;
-  text-overflow: ellipsis; */
+	.card > * {
+  padding: 0px;
+  background-color: #ffffff;
+  color: black;
   display: flex;
   align-items: flex-start;
+  /*transition: background-color 0.1s ease, color 0.1s ease;*/
 }
 
 /* Stile specifico per l'immagine nella sua cella */
@@ -327,10 +338,10 @@ h1 {
 
 /* Stile per le celle di intestazione */
 .header {
-  padding: 12px;
-  background-color: white; /* Sfondo rosso per le intestazioni */
-  color: black; /* Testo bianco */
-  font-weight: bold; /* Testo in grassetto */
+  padding: 2px;
+  background-color: black; /* Sfondo rosso per le intestazioni */
+  color: white; /* Testo bianco */
+  /*font-weight: bold;  Testo in grassetto */
   text-align: left;
 }
 /* Stile per la finestra di anteprima dell'immagine */
